@@ -87,7 +87,7 @@ impl Entity {
         reader.read(&mut buff)?;
 
         let buff = buff.split(|&a| a == 0).next().unwrap();
-        if buff.is_ascii() {
+        if buff.len() >0 && buff.is_extension() {
             Ok(String::from(String::from_utf8_lossy(buff)))
         } else {
             Ok("unknown".to_owned())
@@ -95,12 +95,28 @@ impl Entity {
     }
 
     fn save(&self, reader: &mut BufReader<File>, filename: &str) -> Result<(), Error> {
-        let mut f = File::create(filename)?;
+        let mut f = match File::create(filename) {
+            Ok(f) => f,
+            Err(err) => {
+                eprintln!("Create file failed {}", filename);
+                return Ok(());
+            }
+        };
         reader.seek(SeekFrom::Start(self.offset as u64))?;
         let mut buff = vec![0u8; self.size as usize];
         reader.read(buff.as_mut())?;
         f.write_all(buff.as_mut())?;
         Ok(())
+    }
+}
+
+trait Extension {
+    fn is_extension(&self) -> bool;
+}
+
+impl Extension for [u8] {
+    fn is_extension(&self) -> bool {
+        self.iter().all(|&b| { (b'0' <= b && b <= b'9') || (b'a' <= b && b <= b'z') || (b'A' <= b && b <= b'Z') || b == b'_' })
     }
 }
 
