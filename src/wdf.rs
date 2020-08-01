@@ -4,6 +4,10 @@ use std::fs::File;
 use std::io::{BufReader, Error, Read, Seek, SeekFrom, Write};
 use std::path::Path;
 
+use crate::text;
+
+const TEXT_WDF: [&'static str; 2] = ["setting", "helper"];
+
 pub struct Wdf {
     magic: u32,
     version: u32,
@@ -12,10 +16,42 @@ pub struct Wdf {
 
     list: Vec<Entity>,
     reader: BufReader<File>,
+    filename: String,
+    decode: bool,
 }
 
 impl Wdf {
     pub fn new(filename: &str) -> Self {
+        let is_dtw = filename.contains("外传");
+        Wdf::init(filename, is_dtw)
+    }
+
+    pub fn new_with_dtw(filename: &str) -> Self {
+        Wdf::init(filename, true)
+    }
+
+    pub fn get_file_number(&self) -> u32 {
+        return self.file_number;
+    }
+
+    pub fn extra_all(&mut self, output: &str) -> Result<(), Error> {
+        let path = Path::new(output).join(self.filename.as_str());
+        if !path.exists() {
+            fs::create_dir_all(path.to_str().unwrap()).unwrap();
+        }
+        for entity in &self.list {
+            let filename =
+                entity.uid.to_string() + "." + &entity.get_magic(&mut self.reader).unwrap();
+            entity.save(
+                &mut self.reader,
+                path.join(filename).to_str().unwrap(),
+                self.decode,
+            )?;
+        }
+        Ok(())
+    }
+
+    fn init(filename: &str, is_dtw: bool) -> Self {
         let f = File::open(filename).unwrap();
         let mut reader = BufReader::new(f);
 
@@ -37,6 +73,16 @@ impl Wdf {
             list.push(entity);
         }
 
+        let path = Path::new(filename);
+
+        let filename = path.file_stem().unwrap().to_str().unwrap().to_owned();
+
+        let decode: bool = if is_dtw {
+            false
+        } else {
+            TEXT_WDF.iter().any(|&wdf| wdf == filename)
+        };
+
         Self {
             magic,
             version,
@@ -44,23 +90,9 @@ impl Wdf {
             list_offset,
             list,
             reader,
+            filename,
+            decode,
         }
-    }
-
-    pub fn get_file_number(&self) -> u32 {
-        return self.file_number;
-    }
-
-    pub fn extra_all(&mut self, output: &str) -> Result<(), Error> {
-        let path = Path::new(output);
-        if !path.exists() {
-            fs::create_dir_all(path.to_str().unwrap());
-        }
-        for entity in &self.list {
-            let filename = entity.uid.to_string() + "." + &entity.get_magic(&mut self.reader).unwrap();
-            entity.save(&mut self.reader, path.join(filename).to_str().unwrap())?;
-        }
-        Ok(())
     }
 }
 
@@ -87,17 +119,22 @@ impl Entity {
         reader.read(&mut buff)?;
 
         let buff = buff.split(|&a| a == 0).next().unwrap();
-        if buff.len() >0 && buff.is_extension() {
+        if buff.len() > 0 && buff.is_extension() {
             Ok(String::from(String::from_utf8_lossy(buff)))
         } else {
             Ok("unknown".to_owned())
         }
     }
 
-    fn save(&self, reader: &mut BufReader<File>, filename: &str) -> Result<(), Error> {
+    fn save(
+        &self,
+        reader: &mut BufReader<File>,
+        filename: &str,
+        decode: bool,
+    ) -> Result<(), Error> {
         let mut f = match File::create(filename) {
             Ok(f) => f,
-            Err(err) => {
+            Err(_) => {
                 eprintln!("Create file failed {}", filename);
                 return Ok(());
             }
@@ -105,6 +142,9 @@ impl Entity {
         reader.seek(SeekFrom::Start(self.offset as u64))?;
         let mut buff = vec![0u8; self.size as usize];
         reader.read(buff.as_mut())?;
+        if decode {
+            buff = Vec::from(text::Text::decode(buff.as_mut()));
+        }
         f.write_all(buff.as_mut())?;
         Ok(())
     }
@@ -116,7 +156,12 @@ trait Extension {
 
 impl Extension for [u8] {
     fn is_extension(&self) -> bool {
-        self.iter().all(|&b| { (b'0' <= b && b <= b'9') || (b'a' <= b && b <= b'z') || (b'A' <= b && b <= b'Z') || b == b'_' })
+        self.iter().all(|&b| {
+            (b'0' <= b && b <= b'9')
+                || (b'a' <= b && b <= b'z')
+                || (b'A' <= b && b <= b'Z')
+                || b == b'_'
+        })
     }
 }
 
@@ -133,6 +178,6 @@ mod tests {
     #[test]
     fn test_entity_magic() {
         let mut wdf = Wdf::new("character.wdf");
-        wdf.extra_all("output/character").unwrap();
+        wdf.extra_all("output").unwrap();
     }
 }
