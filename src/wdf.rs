@@ -6,7 +6,7 @@ use std::path::Path;
 
 use crate::text;
 
-const TEXT_WDF: [&'static str; 2] = ["setting", "helper"];
+const TEXT_WDF: [&'static str; 1] = ["setting"];
 
 pub struct Wdf {
     magic: u32,
