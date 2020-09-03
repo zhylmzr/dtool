@@ -40,7 +40,7 @@ impl GB2312 for u8 {
 }
 
 
-fn open_file(filename: &str) -> Vec<u8> {
+pub fn open_file(filename: &str) -> Vec<u8> {
     let mut fd = File::open(filename).unwrap();
     let mut ret = vec![];
 
@@ -48,7 +48,7 @@ fn open_file(filename: &str) -> Vec<u8> {
     ret
 }
 
-fn find_words_on_u8(buff: Vec<u8>, min_length: usize) -> Vec<String> {
+pub fn find_words_on_u8(buff: Vec<u8>, min_length: usize) -> Vec<String> {
     let mut ret = vec![];
     let mut pair = vec![];
     let mut is_gbk2312_start = false;
@@ -84,7 +84,6 @@ fn find_words_on_u8(buff: Vec<u8>, min_length: usize) -> Vec<String> {
     // Tak the rest, if any
     if is_gbk2312_start && !pair.is_empty() {
         pair.remove(pair.len() - 1);
-        is_gbk2312_start = false;
     }
 
     if !pair.is_empty() {

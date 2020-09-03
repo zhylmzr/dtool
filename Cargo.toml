@@ -3,3 +3,4 @@ members = [
     "dtool",
     "strings"
 ]
+default-members = ["dtool"]
