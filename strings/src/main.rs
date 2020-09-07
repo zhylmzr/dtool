@@ -15,25 +15,17 @@ fn get_strings_from_file(filename: &str) -> Vec<String> {
     find_words_on_u8(buff, MIN_LENGTH)
 }
 
-fn get_strings_from_dir(path: &str) -> Vec<String> {
+fn get_strings_from_dir(path: &str) {
     let paths = fs::read_dir(path).unwrap();
-    let mut result = vec![];
+    let mut fd = OpenOptions::new().write(true).create(true).truncate(true).open(path.to_owned().add(".txt")).unwrap();
 
     for path in paths {
         let p = path.unwrap().path();
         if p.is_file() {
             let words = get_strings_from_file(&p.display().to_string());
-            result = vec![result, words, '\n'].concat();
+            fd.write_all(words.join("\n").as_bytes());
         }
     }
-
-    result
-}
-
-fn save_strings(filename: &str, strings: Vec<String>) {
-    let mut fd = OpenOptions::new().write(true).create(true).open(filename).unwrap();
-    let content = strings.join("\n");
-    fd.write_all(content.as_bytes());
 }
 
 fn main() {
@@ -47,8 +39,6 @@ fn main() {
         if subdir.split("/").filter(|&a| { a.starts_with(".") }).count() > 0 {
             continue;
         }
-        let res = get_strings_from_dir(&subdir);
-        let path = Path::new(dir).join(subdir.add(".text"));
-        save_strings(path.to_str().unwrap(), res);
+        get_strings_from_dir(&subdir);
     }
 }
