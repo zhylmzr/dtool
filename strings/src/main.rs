@@ -8,11 +8,11 @@ use std::path::Path;
 
 use strings::{find_words_on_u8, open_file};
 
-static MIN_HEIGHT: usize = 3;
+static MIN_LENGTH: usize = 3;
 
 fn get_strings_from_file(filename: &str) -> Vec<String> {
     let buff = open_file(filename);
-    find_words_on_u8(buff, MIN_HEIGHT)
+    find_words_on_u8(buff, MIN_LENGTH)
 }
 
 fn get_strings_from_dir(path: &str) -> Vec<String> {
