@@ -29,16 +29,19 @@ fn get_strings_from_dir(path: &str) {
 }
 
 fn main() {
-    let dir = "output";
-    let paths = fs::read_dir(dir).unwrap();
-
-    for path in paths {
-        let path = path.unwrap().path();
-        if path.is_file() { continue; }
-        let subdir = path.display().to_string();
-        if subdir.split("/").filter(|&a| { a.starts_with(".") }).count() > 0 {
-            continue;
-        }
-        get_strings_from_dir(&subdir);
-    }
+    let words = get_strings_from_file("C:\\Users\\qemcs\\Desktop\\DT-10010\\bin\\GacShell.dll");
+    let mut fd = OpenOptions::new().write(true).create(true).truncate(true).open("gacshell.txt").unwrap();
+    fd.write_all(words.join("\n").as_bytes()).unwrap();
+    // let dir = "output";
+    // let paths = fs::read_dir(dir).unwrap();
+    //
+    // for path in paths {
+    //     let path = path.unwrap().path();
+    //     if path.is_file() { continue; }
+    //     let subdir = path.display().to_string();
+    //     if subdir.split("/").filter(|&a| { a.starts_with(".") }).count() > 0 {
+    //         continue;
+    //     }
+    //     get_strings_from_dir(&subdir);
+    // }
 }

@@ -19,7 +19,7 @@ if __name__ == "__main__":
 
     outContent = []
     errContent = []
-    unknowConten = []
+    unknowContent = []
 
     for p in content:
         p = p.strip()
@@ -45,14 +45,14 @@ if __name__ == "__main__":
                 continue
             outContent.append(p)
         else:
-            if p in unknowConten:
+            if p in unknowContent:
                 continue
-            unknowConten.append(p)
+            unknowContent.append(p)
 
     fd = open("./output/%s.filter.txt" % input, "w+", encoding="utf-8")
     fd.writelines(outContent)
     fd.writelines("\n##############UNKNOW##############\n")
-    fd.writelines(errContent)
+    fd.writelines(unknowContent)
     fd.writelines("\n##############ERROR##############\n")
     fd.writelines(errContent)
     fd.close()
