@@ -8,7 +8,7 @@ use std::path::Path;
 
 use strings::{find_words_on_u8, open_file};
 
-static MIN_LENGTH: usize = 3;
+static MIN_LENGTH: usize = 6;
 
 fn get_strings_from_file(filename: &str) -> Vec<String> {
     let buff = open_file(filename);
@@ -23,7 +23,7 @@ fn get_strings_from_dir(path: &str) {
         let p = path.unwrap().path();
         if p.is_file() {
             let words = get_strings_from_file(&p.display().to_string());
-            fd.write_all(words.join("\n").as_bytes());
+            fd.write_all(words.join("\n").as_bytes()).unwrap();
         }
     }
 }
