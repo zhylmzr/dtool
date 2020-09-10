@@ -37,7 +37,7 @@ pub fn open_file(filename: &str) -> Vec<u8> {
     let mut fd = File::open(filename).unwrap();
     let mut ret = vec![];
 
-    fd.read_to_end(&mut ret);
+    fd.read_to_end(&mut ret).unwrap();
     ret
 }
 
@@ -45,6 +45,22 @@ pub fn find_words_on_u8(buff: Vec<u8>, min_length: usize) -> Vec<String> {
     let mut ret = vec![];
     let mut pair = vec![];
     let mut is_gbk2312_start = false;
+
+    let deal_end_word = |is_gbk2312_start: &mut bool, pair: &mut Vec<u8>, ret: &mut Vec<String>| {
+        // We have to remove character if isn't gbk2312
+        if *is_gbk2312_start && !pair.is_empty() {
+            pair.remove(pair.len() - 1);
+            *is_gbk2312_start = false;
+        }
+
+        if !pair.is_empty() {
+            if pair.len() >= min_length {
+                let s = GBK.decode(pair.as_slice()).0;
+                ret.push(String::from(s));
+            }
+            pair.clear();
+        }
+    };
 
     for ch in buff {
         if ch.is_filter_character() && !is_gbk2312_start {
@@ -58,34 +74,12 @@ pub fn find_words_on_u8(buff: Vec<u8>, min_length: usize) -> Vec<String> {
                 is_gbk2312_start = true
             }
         } else {
-            // We have to remove character if isn't gbk2312
-            if is_gbk2312_start && !pair.is_empty() {
-                pair.remove(pair.len() - 1);
-                is_gbk2312_start = false;
-            }
-
-            if !pair.is_empty() {
-                if pair.len() >= min_length {
-                    let s = GBK.decode(pair.as_slice()).0;
-                    ret.push(String::from(s));
-                }
-                pair.clear();
-            }
+            deal_end_word(&mut is_gbk2312_start, &mut pair, &mut ret);
         }
     }
 
     // Tak the rest, if any
-    if is_gbk2312_start && !pair.is_empty() {
-        pair.remove(pair.len() - 1);
-    }
-
-    if !pair.is_empty() {
-        if pair.len() >= min_length {
-            let s = GBK.decode(pair.as_slice()).0;
-            ret.push(String::from(s));
-        }
-        pair.clear();
-    }
+    deal_end_word(&mut is_gbk2312_start, &mut pair, &mut ret);
 
     ret
 }

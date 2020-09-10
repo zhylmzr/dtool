@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use std::convert::TryInto;
 use std::fs;
 use std::fs::File;
