@@ -1,7 +1,7 @@
 use wdf::Wdf;
 
-mod wdf;
 mod text;
+mod wdf;
 
 fn main() {
     let mut wdf = Wdf::new("character.wdf");

@@ -16,7 +16,12 @@ fn get_strings_from_file(filename: &str) -> Vec<String> {
 
 fn get_strings_from_dir(path: &str) {
     let paths = fs::read_dir(path).unwrap();
-    let mut fd = OpenOptions::new().write(true).create(true).truncate(true).open(path.to_owned().add(".txt")).unwrap();
+    let mut fd = OpenOptions::new()
+        .write(true)
+        .create(true)
+        .truncate(true)
+        .open(path.to_owned().add(".txt"))
+        .unwrap();
 
     for path in paths {
         let p = path.unwrap().path();
@@ -33,9 +38,11 @@ fn main() {
 
     for path in paths {
         let path = path.unwrap().path();
-        if path.is_file() { continue; }
+        if path.is_file() {
+            continue;
+        }
         let subdir = path.display().to_string();
-        if subdir.split("/").filter(|&a| { a.starts_with(".") }).count() > 0 {
+        if subdir.split("/").filter(|&a| a.starts_with(".")).count() > 0 {
             continue;
         }
         get_strings_from_dir(&subdir);
