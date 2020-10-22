@@ -1,10 +1,10 @@
 #![allow(dead_code)]
 
-use std::convert::TryInto;
 use std::fs;
 use std::fs::File;
 use std::io::{BufReader, Error, Read, Seek, SeekFrom, Write};
 use std::path::Path;
+use std::{collections::HashMap, convert::TryInto};
 
 use crate::text;
 
@@ -20,6 +20,8 @@ pub struct Wdf {
     reader: BufReader<File>,
     filename: String,
     decode: bool,
+
+    name_list: HashMap<u32, String>,
 }
 
 impl Wdf {
@@ -36,21 +38,48 @@ impl Wdf {
         return self.file_number;
     }
 
-    pub fn extra_all(&mut self, output: &str) -> Result<(), Error> {
+    fn extra(&mut self, output: &str) -> Result<(), Error> {
         let path = Path::new(output).join(self.filename.as_str());
         if !path.exists() {
             fs::create_dir_all(path.to_str().unwrap()).unwrap();
         }
         for entity in &self.list {
-            let filename =
-                entity.uid.to_string() + "." + &entity.get_magic(&mut self.reader).unwrap();
+            let filename = if self.name_list.contains_key(&entity.uid) {
+                let path = Path::new(output).join(self.name_list.get(&entity.uid).unwrap());
+                if !path.parent().unwrap().exists() {
+                    fs::create_dir_all(path.parent().unwrap().to_str().unwrap()).unwrap();
+                }
+                path.to_str().unwrap().to_string()
+            } else {
+                let filename = format!("{}.{}", entity.uid.to_string(), entity.get_magic(&mut self.reader).unwrap());
+                path.join(filename).to_str().unwrap().to_string()
+            };
+
             entity.save(
                 &mut self.reader,
-                path.join(filename).to_str().unwrap(),
+                &filename,
                 self.decode,
             )?;
         }
         Ok(())
+    }
+
+    pub fn extra_all(&mut self, output: &str) -> Result<(), Error> {
+        self.extra(output)
+    }
+
+    pub fn extra_all_with_hash(&mut self, output: &str, hash_path: &str) -> Result<(), Error> {
+        let uid_lst = fs::read_to_string(hash_path).unwrap();
+        let contents: Vec<_> = uid_lst.split("\n").collect();
+
+        for line in contents {
+            let line: Vec<_> = line.split(" ").collect();
+            let filename = line[0].replace("\\", "/");
+            let uid = line[1].parse::<u32>().unwrap();
+            self.name_list.insert(uid, filename.to_string());
+        }
+
+        self.extra(output)
     }
 
     fn init(filename: &str, is_dtw: bool) -> Self {
@@ -94,6 +123,7 @@ impl Wdf {
             reader,
             filename,
             decode,
+            name_list: HashMap::new(),
         }
     }
 }
