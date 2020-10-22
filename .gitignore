@@ -3,3 +3,5 @@
 /wdf
 *.wdf
 .idea
+all.lst
+known.lst

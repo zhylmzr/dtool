@@ -166,20 +166,3 @@ impl Extension for [u8] {
         })
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use crate::Wdf;
-
-    #[test]
-    fn test_wdf_number() {
-        let wdf = Wdf::new("character.wdf");
-        assert_eq!(wdf.get_file_number(), 6851);
-    }
-
-    #[test]
-    fn test_entity_magic() {
-        let mut wdf = Wdf::new("character.wdf");
-        wdf.extra_all("output").unwrap();
-    }
-}
