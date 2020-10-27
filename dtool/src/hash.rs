@@ -141,6 +141,7 @@ fn calc_hash_from_lst(lst_path: &str, out_path: &str) {
 
     let mut f = OpenOptions::new()
         .create(true)
+        .truncate(true)
         .write(true)
         .open(out_path)
         .unwrap();
@@ -151,7 +152,7 @@ fn calc_hash_from_lst(lst_path: &str, out_path: &str) {
         }
         let uid = string_id(filename);
         f.write_all(filename).unwrap();
-        f.write_all(" ".as_bytes()).unwrap();
+        f.write_all("|".as_bytes()).unwrap();
         f.write_all(uid.to_string().as_bytes()).unwrap();
         if idx != content.len() - 1 {
             f.write_all("\n".as_bytes()).unwrap();
@@ -170,5 +171,9 @@ mod tests {
             string_id("character/ani/2011znq001.ara".as_bytes()),
             3954770787
         );
+    }
+
+    fn test_calc_hash() {
+        calc_hash_from_lst("../all.lst", "../known.lst");
     }
 }

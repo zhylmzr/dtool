@@ -74,7 +74,7 @@ impl Wdf {
         let contents: Vec<_> = uid_lst.split("\n").collect();
 
         for line in contents {
-            let line: Vec<_> = line.split(" ").collect();
+            let line: Vec<_> = line.split("|").collect();
             let filename = line[0].replace("\\", "/");
             let uid = line[1].parse::<u32>().unwrap();
             self.name_list.insert(uid, filename.to_string());
