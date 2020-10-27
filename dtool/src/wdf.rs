@@ -40,9 +40,6 @@ impl Wdf {
 
     fn extra(&mut self, output: &str) -> Result<(), Error> {
         let path = Path::new(output).join(self.filename.as_str());
-        if !path.exists() {
-            fs::create_dir_all(path.to_str().unwrap()).unwrap();
-        }
         for entity in &self.list {
             let filename = if self.name_list.contains_key(&entity.uid) {
                 let path = Path::new(output).join(self.name_list.get(&entity.uid).unwrap());
@@ -52,6 +49,10 @@ impl Wdf {
                 path.to_str().unwrap().to_string()
             } else {
                 let filename = format!("{}.{}", entity.uid.to_string(), entity.get_magic(&mut self.reader).unwrap());
+                let path = path.join("unknown");
+                if !path.exists() {
+                    fs::create_dir_all(path.to_str().unwrap()).unwrap();
+                }
                 path.join(filename).to_str().unwrap().to_string()
             };
 

@@ -135,6 +135,8 @@ pub fn string_id(full_name: &[u8]) -> u32 {
 
 fn calc_hash_from_lst(lst_path: &str, out_path: &str) {
     let content = fs::read(lst_path).unwrap();
+    // 兼容CRLF换行
+    let content: Vec<_> = content.into_iter().filter(|&a| a != b'\r').collect();
     let content: Vec<_> = content.split(|&a| a == b'\n').collect();
 
     let mut f = OpenOptions::new()
@@ -142,7 +144,8 @@ fn calc_hash_from_lst(lst_path: &str, out_path: &str) {
         .write(true)
         .open(out_path)
         .unwrap();
-    for filename in content {
+
+    for (idx, filename) in content.iter().enumerate() {
         if filename.len() == 0 {
             continue;
         }
@@ -150,7 +153,9 @@ fn calc_hash_from_lst(lst_path: &str, out_path: &str) {
         f.write_all(filename).unwrap();
         f.write_all(" ".as_bytes()).unwrap();
         f.write_all(uid.to_string().as_bytes()).unwrap();
-        f.write_all("\n".as_bytes()).unwrap();
+        if idx != content.len() - 1 {
+            f.write_all("\n".as_bytes()).unwrap();
+        }
     }
 }
 
