@@ -8,7 +8,7 @@ use std::{collections::HashMap, convert::TryInto};
 
 use crate::text;
 
-const TEXT_WDF: [&'static str; 1] = ["setting"];
+const TEXT_EXTENTIONS: [&'static str; 3] = [".txt", ".xml", ".ini"];
 
 pub struct Wdf {
     magic: u32,
@@ -18,20 +18,14 @@ pub struct Wdf {
 
     list: Vec<Entity>,
     reader: BufReader<File>,
-    filename: String,
-    decode: bool,
+    pkg_name: String,
 
     name_list: HashMap<u32, String>,
 }
 
 impl Wdf {
     pub fn new(filename: &str) -> Self {
-        let is_dtw = filename.contains("外传");
-        Wdf::init(filename, is_dtw)
-    }
-
-    pub fn new_with_dtw(filename: &str) -> Self {
-        Wdf::init(filename, true)
+        Wdf::init(filename)
     }
 
     pub fn get_file_number(&self) -> u32 {
@@ -39,7 +33,7 @@ impl Wdf {
     }
 
     fn extra(&mut self, output: &str) -> Result<(), Error> {
-        let path = Path::new(output).join(self.filename.as_str());
+        let path = Path::new(output).join(self.pkg_name.as_str());
         for entity in &self.list {
             let filename = if self.name_list.contains_key(&entity.uid) {
                 let path = Path::new(output).join(self.name_list.get(&entity.uid).unwrap());
@@ -48,7 +42,11 @@ impl Wdf {
                 }
                 path.to_str().unwrap().to_string()
             } else {
-                let filename = format!("{}.{}", entity.uid.to_string(), entity.get_magic(&mut self.reader).unwrap());
+                let filename = format!(
+                    "{}.{}",
+                    entity.uid.to_string(),
+                    entity.get_magic(&mut self.reader).unwrap()
+                );
                 let path = path.join("unknown");
                 if !path.exists() {
                     fs::create_dir_all(path.to_str().unwrap()).unwrap();
@@ -56,11 +54,7 @@ impl Wdf {
                 path.join(filename).to_str().unwrap().to_string()
             };
 
-            entity.save(
-                &mut self.reader,
-                &filename,
-                self.decode,
-            )?;
+            entity.save(&mut self.reader, &filename)?;
         }
         Ok(())
     }
@@ -83,7 +77,7 @@ impl Wdf {
         self.extra(output)
     }
 
-    fn init(filename: &str, is_dtw: bool) -> Self {
+    fn init(filename: &str) -> Self {
         let f = File::open(filename).unwrap();
         let mut reader = BufReader::new(f);
 
@@ -107,13 +101,7 @@ impl Wdf {
 
         let path = Path::new(filename);
 
-        let filename = path.file_stem().unwrap().to_str().unwrap().to_owned();
-
-        let decode: bool = if is_dtw {
-            false
-        } else {
-            TEXT_WDF.iter().any(|&wdf| wdf == filename)
-        };
+        let pkg_name = path.file_stem().unwrap().to_str().unwrap().to_owned();
 
         Self {
             magic,
@@ -122,8 +110,7 @@ impl Wdf {
             list_offset,
             list,
             reader,
-            filename,
-            decode,
+            pkg_name,
             name_list: HashMap::new(),
         }
     }
@@ -159,12 +146,7 @@ impl Entity {
         }
     }
 
-    fn save(
-        &self,
-        reader: &mut BufReader<File>,
-        filename: &str,
-        decode: bool,
-    ) -> Result<(), Error> {
+    fn save(&self, reader: &mut BufReader<File>, filename: &str) -> Result<(), Error> {
         let mut f = match File::create(filename) {
             Ok(f) => f,
             Err(_) => {
@@ -175,7 +157,7 @@ impl Entity {
         reader.seek(SeekFrom::Start(self.offset as u64))?;
         let mut buff = vec![0u8; self.size as usize];
         reader.read(buff.as_mut())?;
-        if decode {
+        if let Some(_) = TEXT_EXTENTIONS.iter().find(|&&a| filename.ends_with(a)) {
             buff = Vec::from(text::Text::decode(buff.as_mut()));
         }
         f.write_all(buff.as_mut())?;
