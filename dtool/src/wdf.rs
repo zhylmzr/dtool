@@ -9,6 +9,7 @@ use std::{collections::HashMap, convert::TryInto};
 use crate::text;
 
 const TEXT_EXTENTIONS: [&'static str; 3] = [".txt", ".xml", ".ini"];
+const TEXT_EXCLUDES: [&'static str; 1] = ["caption.xml"];
 
 pub struct Wdf {
     magic: u32,
@@ -65,7 +66,13 @@ impl Wdf {
 
     pub fn extra_all_with_hash(&mut self, output: &str, hash_path: &str) -> Result<(), Error> {
         let uid_lst = fs::read_to_string(hash_path).unwrap();
-        let contents: Vec<_> = uid_lst.split("\n").collect();
+        let mut contents = String::new();
+        uid_lst.chars().enumerate().for_each(|(_, c)| {
+            if c != '\r' {
+                contents.push(c);
+            }
+        });
+        let contents: Vec<_> = contents.split("\n").filter(|&s| s != "").collect();
 
         for line in contents {
             let line: Vec<_> = line.split("|").collect();
@@ -158,7 +165,9 @@ impl Entity {
         let mut buff = vec![0u8; self.size as usize];
         reader.read(buff.as_mut())?;
         if let Some(_) = TEXT_EXTENTIONS.iter().find(|&&a| filename.ends_with(a)) {
-            buff = Vec::from(text::Text::decode(buff.as_mut()));
+            if let None = TEXT_EXCLUDES.iter().find(|&&a| filename.ends_with(a)) {
+                buff = Vec::from(text::Text::decode(buff.as_mut()));
+            }
         }
         f.write_all(buff.as_mut())?;
         Ok(())
